@@ -40,11 +40,15 @@ A request to the helpdesk is received by IIS, routed by osTicket's URL Rewrite r
 - Opened inbound ports **RDP (3389)** for management and **HTTP (80)** for web access.
 - Connected via RDP.
 
+![Connected via RDP](images/rdp.png)
+![Connected via RDP](images/connected-via-rdp.png)
+![Azure VM overview](images/azure-vm-overview.png)
 ### 2. Install IIS + CGI
 - Added the **Web Server (IIS)** role via Server Manager.
 - Under **Application Development**, enabled **CGI** (required for PHP via FastCGI).
 - Verified IIS with the default welcome page at `http://localhost`.
-
+![Install IIS role via Server Manager](images/enabling-iis-windows-features.png)
+![Verified IIS welcome](images/iis-welcome-page.png)
 ### 3. Install URL Rewrite Module
 - Downloaded and installed the **IIS URL Rewrite Module 2.1** from Microsoft.
 - Required because osTicket's `web.config` defines `<rewrite>` rules; without the module, IIS cannot parse the config.
@@ -56,7 +60,7 @@ A request to the helpdesk is received by IIS, routed by osTicket's URL Rewrite r
 - Set `extension_dir = "C:\PHP\ext"` and a `date.timezone`.
 - Registered PHP with IIS as a **FastCGI** handler (`*.php` → `FastCgiModule` → `C:\PHP\php-cgi.exe`).
 - Added a matching entry under **FastCGI Settings**.
-
+![Enable extensions](images/php-extensions.png)
 ### 5. Install MySQL & create the database
 - Installed **MySQL 8 Community Server** and set a root password.
 - Created the database and a dedicated application user:
@@ -67,12 +71,13 @@ CREATE USER 'ostadmin'@'localhost' IDENTIFIED BY 'YourStrongPassword!';
 GRANT ALL PRIVILEGES ON osticket.* TO 'ostadmin'@'localhost';
 FLUSH PRIVILEGES;
 ```
-
+![Show Databases](images/show-databases.png)
 ### 6. Deploy osTicket
 - Downloaded the latest osTicket release and copied the `upload` contents into the IIS web root (`C:\inetpub\wwwroot`).
 - Renamed `ost-sampleconfig.php` to `ost-config.php`.
 - Ran the web installer at `http://localhost`, completed the System, Admin, and Database settings (hostname `localhost`).
-
+![Deploy osTicket](images/osticket-scp.png)
+![Deploy osTicket](images/osticket.png)
 ### 7. Post-install hardening
 - Deleted the `setup` folder.
 - Set `include/ost-config.php` to read-only.
