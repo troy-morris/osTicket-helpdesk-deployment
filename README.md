@@ -13,8 +13,8 @@ This build was done manually (no automated stack installer) to demonstrate end-t
 | Cloud | Microsoft Azure (VM) |
 | OS | Windows Server 2022 |
 | Web Server | IIS 10 + URL Rewrite Module |
-| Runtime | PHP 8.x (Non-Thread-Safe, via FastCGI) |
-| Database | MySQL 8 |
+| Runtime | PHP 8.2 (Non-Thread-Safe, via FastCGI) |
+| Database | MySQL 9.7 |
 | Application | osTicket (latest release) |
 
 ---
