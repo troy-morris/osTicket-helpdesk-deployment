@@ -36,7 +36,7 @@ A request to the helpdesk is received by IIS, routed by osTicket's URL Rewrite r
 
 ### 1. Provision the Azure VM
 - Created a Resource Group (`rg-osticket-lab`) to keep all resources together for easy teardown.
-- Deployed a Windows Server 2022 VM (B2s size).
+- Deployed a Windows Server 2022 VM (D2ls size).
 - Opened inbound ports **RDP (3389)** for management and **HTTP (80)** for web access.
 - Connected via RDP.
 
