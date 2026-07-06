@@ -13,8 +13,8 @@ This build was done manually (no automated stack installer) to demonstrate end-t
 | Cloud | Microsoft Azure (VM) |
 | OS | Windows Server 2022 |
 | Web Server | IIS 10 + URL Rewrite Module |
-| Runtime | PHP 8.2 (Non-Thread-Safe, via FastCGI) |
-| Database | MySQL 9.7 |
+| Runtime | PHP 8.x (Non-Thread-Safe, via FastCGI) |
+| Database | MySQL 8 |
 | Application | osTicket (latest release) |
 
 ---
@@ -36,19 +36,23 @@ A request to the helpdesk is received by IIS, routed by osTicket's URL Rewrite r
 
 ### 1. Provision the Azure VM
 - Created a Resource Group (`rg-osticket-lab`) to keep all resources together for easy teardown.
-- Deployed a Windows Server 2022 VM (D2ls size).
+- Deployed a Windows Server 2022 VM.
 - Opened inbound ports **RDP (3389)** for management and **HTTP (80)** for web access.
 - Connected via RDP.
 
-![Connected via RDP](images/rdp.png)
-![Connected via RDP](images/connected-via-rdp.png)
-![Azure VM overview](images/azure-vm-overview.png)
+![Azure VM overview](images/os-01-azure-vm-overview.png)
+
+![Connected to the server via RDP](images/os-02-connected-rdp.png)
+
 ### 2. Install IIS + CGI
 - Added the **Web Server (IIS)** role via Server Manager.
 - Under **Application Development**, enabled **CGI** (required for PHP via FastCGI).
 - Verified IIS with the default welcome page at `http://localhost`.
-![Install IIS role via Server Manager](images/enabling-iis-windows-features.png)
-![Verified IIS welcome](images/iis-welcome-page.png)
+
+![IIS role and features confirmation](images/os-03-iis-role-features.png)
+
+![IIS default welcome page](images/os-04-iis-welcome.png)
+
 ### 3. Install URL Rewrite Module
 - Downloaded and installed the **IIS URL Rewrite Module 2.1** from Microsoft.
 - Required because osTicket's `web.config` defines `<rewrite>` rules; without the module, IIS cannot parse the config.
@@ -60,7 +64,9 @@ A request to the helpdesk is received by IIS, routed by osTicket's URL Rewrite r
 - Set `extension_dir = "C:\PHP\ext"` and a `date.timezone`.
 - Registered PHP with IIS as a **FastCGI** handler (`*.php` → `FastCgiModule` → `C:\PHP\php-cgi.exe`).
 - Added a matching entry under **FastCGI Settings**.
-![Enable extensions](images/php-extensions.png)
+
+![PHP extensions enabled in php.ini](images/os-06-php-extensions.png)
+
 ### 5. Install MySQL & create the database
 - Installed **MySQL 8 Community Server** and set a root password.
 - Created the database and a dedicated application user:
@@ -71,17 +77,24 @@ CREATE USER 'ostadmin'@'localhost' IDENTIFIED BY 'YourStrongPassword!';
 GRANT ALL PRIVILEGES ON osticket.* TO 'ostadmin'@'localhost';
 FLUSH PRIVILEGES;
 ```
-![Show Databases](images/show-databases.png)
+
+![MySQL databases showing osticket](images/os-10-mysql-databases.png)
+
 ### 6. Deploy osTicket
 - Downloaded the latest osTicket release and copied the `upload` contents into the IIS web root (`C:\inetpub\wwwroot`).
 - Renamed `ost-sampleconfig.php` to `ost-config.php`.
 - Ran the web installer at `http://localhost`, completed the System, Admin, and Database settings (hostname `localhost`).
-![Deploy osTicket](images/osticket-scp.png)
-![Deploy osTicket](images/osticket.png)
+
+![osTicket Support Center running](images/os-11-osticket-welcome.png)
+
 ### 7. Post-install hardening
 - Deleted the `setup` folder.
 - Set `include/ost-config.php` to read-only.
 - Logged into the agent panel at `http://localhost/scp` and created a test ticket to confirm the full workflow.
+
+![osTicket staff control panel](images/os-12-osticket-scp.png)
+
+![Test ticket in the agent panel](images/os-13-test-ticket.png)
 
 ---
 
@@ -94,6 +107,8 @@ The value of this project was in the integration issues between IIS and PHP. Eac
 - **Cause:** osTicket's `web.config` uses a `<rewrite>` section, but the **URL Rewrite Module was not installed**. IIS cannot parse a `<rewrite>` block it doesn't recognize.
 - **Fix:** Installed the IIS URL Rewrite Module, then `iisreset`.
 
+![HTTP 500.19 configuration error](images/os-07-500-19-error.png)
+
 ### 2. "Not recognized as a native module" when adding the PHP handler
 - **Symptom:** Adding the `*.php` module mapping failed, stating FastCgiModule was not a recognized native module.
 - **Cause:** The **CGI feature was not actually enabled**, so the FastCGI native module wasn't loaded.
@@ -103,10 +118,14 @@ The value of this project was in the integration issues between IIS and PHP. Eac
   ```
   Confirmed **FastCgiModule** then appeared under server-level **Modules**.
 
+![Enabling the IIS-CGI feature via PowerShell](images/os-05-enable-cgi.png)
+
 ### 3. PHP rendering as plain text
 - **Symptom:** Browsing the site returned raw PHP source code instead of executing it.
 - **Cause:** A `.php` **MIME type (`text/html`) had been added** to IIS. A MIME mapping tells IIS to serve the file as static content, which overrode the FastCGI handler meant to execute it.
 - **Fix:** Removed the `.php` MIME type entirely. PHP files should have **no** MIME mapping — the FastCGI handler is what processes them.
+
+![PHP rendering as plain text instead of executing](images/os-08-php-plain-text.png)
 
 ### 4. HTTP 404.3 — no handler for `.php`
 - **Symptom:** After removing the MIME type, `.php` requests returned 404.3 (no handler configured).
@@ -120,6 +139,8 @@ The value of this project was in the integration issues between IIS and PHP. Eac
   appcmd set config "Default Web Site" -section:system.webServer/handlers /+"[name='PHP_FastCGI_Site',path='*.php',verb='*',modules='FastCgiModule',scriptProcessor='C:\PHP\php-cgi.exe',resourceType='File',requireAccess='Script']"
   ```
   followed by `iisreset`. The handler then applied and PHP executed.
+
+![PHP FastCGI handler mapping confirmed via appcmd](images/os-09-handler-mapping.png)
 
 ### 5. MySQL command appearing to "hang"
 - **Symptom:** A SQL statement didn't return `Query OK`; the prompt changed to `->`.
